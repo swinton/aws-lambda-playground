@@ -6,9 +6,9 @@ const decrypt = require('./lib/decrypt');
 exports.handler = async (event, context) => {
   console.log(event, context);
 
-  // Decrypt token
-  const privateKey = await decrypt(process.env.ENCRYPTED_PRIVATE_KEY, { trim: true });
-  const id = await decrypt(process.env.ENCRYPTED_APP_ID, { trim: true });
+  // Decode base64-encoded private key
+  const privateKey = Buffer.from(process.env.GITHUB_APP_PRIVATE_KEY, 'base64').toString()
+  const id = process.env.GITHUB_APP_ID
 
   const octokit = new Octokit({
     authStrategy: createAppAuth,
