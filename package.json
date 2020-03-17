@@ -13,6 +13,7 @@
   "author": "Steve Winton <stevewinton@gmail.com> (https://github.com/swinton)",
   "license": "ISC",
   "dependencies": {
+    "@octokit/auth-app": "^2.4.3",
     "@octokit/rest": "^17.1.0",
     "aws-sdk": "^2.640.0"
   },

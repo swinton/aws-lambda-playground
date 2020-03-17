@@ -4,23 +4,7 @@
 ## Bootstrap
 
 ```shell
-# Encrypt token
-export KEY_ID= # your CMK key ID
-
-# Write PAT to secret.txt
-cat > secret.txt
-
-# Encrypt PAT
-aws kms encrypt \
---key-id $KEY_ID \
---plaintext fileb://secret.txt \
---output text \
---query CiphertextBlob \
---profile key-encrypter > b64encodedsecret.txt
-
-# Save b64encodedsecret.txt contents as environment var, ENCRYPTED_GITHUB_TOKEN
-
-# Create Lambda function, and attach policy to allow KMS decryption
+# TODO cloudformationsomethingsomething...
 ```
 
 ## Workflow
