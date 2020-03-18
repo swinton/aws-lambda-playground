@@ -15,7 +15,8 @@
   "dependencies": {
     "@octokit/auth-app": "^2.4.3",
     "@octokit/rest": "^17.1.0",
-    "aws-sdk": "^2.640.0"
+    "aws-sdk": "^2.640.0",
+    "minimist": "^1.2.5"
   },
   "devDependencies": {
     "@zeit/ncc": "^0.21.1",
