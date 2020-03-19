@@ -1,4 +1,7 @@
 /* eslint-disable no-console */
+const getAllUsersInGroup = require('./lib/get-all-users-in-group');
+const getTagForUser = require('./lib/get-tag-for-user');
+
 const getOctokitClient = require('./lib/get-octokit-client');
 
 exports.handler = async (event, context) => {
@@ -6,6 +9,26 @@ exports.handler = async (event, context) => {
 
   // Get octokit client
   const octokit = getOctokitClient();
+  const groupName = process.env.GROUP_NAME;
+  const tagName = process.env.TAG_NAME;
+
+  // Iterate over all users in specified group
+  const users = await getAllUsersInGroup(groupName);
+  await Promise.all(
+    users.map(async ({ UserName: userName }) => {
+      try {
+        const repo = await getTagForUser(userName, tagName);
+
+        // TODO
+        // Make sure we have an installation for this repo
+
+        // TODO
+        // Rotate this user's access keys
+      } catch (e) {
+        console.error(`Repo not allocated for ${userName}.`);
+      }
+    })
+  );
 
   // Return the authenticated app
   const { data: viewer } = await octokit.apps.getAuthenticated();
