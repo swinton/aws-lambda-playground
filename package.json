@@ -16,7 +16,8 @@
     "@octokit/auth-app": "^2.4.3",
     "@octokit/rest": "^17.1.0",
     "aws-sdk": "^2.640.0",
-    "minimist": "^1.2.5"
+    "minimist": "^1.2.5",
+    "tweetsodium": "0.0.4"
   },
   "devDependencies": {
     "@zeit/ncc": "^0.21.1",

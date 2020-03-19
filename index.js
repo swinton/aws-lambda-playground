@@ -2,12 +2,11 @@
 const getAllUsersInGroup = require('./lib/get-all-users-in-group');
 const getTagForUser = require('./lib/get-tag-for-user');
 const rotateKeys = require('./lib/rotate-keys');
+const updateRepoSecret = require('./lib/update-repo-secret');
 
 const { getOctokitAppClient, getOctokitAppInstallationClient } = require('./lib/get-octokit-client');
 
-exports.handler = async (event, context) => {
-  console.log(event, context);
-
+exports.handler = async () => {
   // Get octokit client
   const appOctokit = getOctokitAppClient();
   const groupName = process.env.GROUP_NAME;
@@ -30,9 +29,21 @@ exports.handler = async (event, context) => {
         // Rotate this user's access keys
         await rotateKeys(userName, {
           newKeyHandler: async ({ accessKeyId, secretAccessKey }) => {
-            // TODO
             // Preserve these keys in the repo as secrets, via installationOctokit
-            console.log(`New key activated for ${userName} in ${repo}: ${accessKeyId}, ${secretAccessKey}.`);
+            await updateRepoSecret(installationOctokit, {
+              owner,
+              repo,
+              secretName: 'AWS_ACCESS_KEY_ID',
+              secretValue: accessKeyId
+            });
+
+            await updateRepoSecret(installationOctokit, {
+              owner,
+              repo,
+              secretName: 'AWS_SECRET_ACCESS_KEY',
+              secretValue: secretAccessKey
+            });
+            console.log(`New key activated for ${userName} in ${owner}/${repo}.`);
 
             // Fire off a repository dispatch event
             // https://github.com/swinton/trigger-repository-dispatch/blob/master/index.js
@@ -51,10 +62,6 @@ exports.handler = async (event, context) => {
       }
     })
   );
-
-  // Return the authenticated app
-  const { data: viewer } = await appOctokit.apps.getAuthenticated();
-  return viewer;
 };
 
 if (require.main === module) {
