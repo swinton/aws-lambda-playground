@@ -24,7 +24,7 @@ exports.handler = async (event, context) => {
 
         // Make sure we have an installation for this repo
         // https://developer.github.com/v3/apps/#get-a-repository-installation
-        const { data: installation } = await appOctokit.apps.getRepoInstallation({ repo, owner });
+        const { data: installation } = await appOctokit.apps.getRepoInstallation({ owner, repo });
         const installationOctokit = getOctokitAppInstallationClient(installation.id);
 
         // Rotate this user's access keys
@@ -34,8 +34,16 @@ exports.handler = async (event, context) => {
             // Preserve these keys in the repo as secrets, via installationOctokit
             console.log(`New key activated for ${userName} in ${repo}: ${accessKeyId}, ${secretAccessKey}.`);
 
-            // TODO
             // Fire off a repository dispatch event
+            // https://github.com/swinton/trigger-repository-dispatch/blob/master/index.js
+            return installationOctokit.repos.createDispatchEvent({
+              owner,
+              repo,
+              event_type: 'aws_access_keys_regenerated',
+              client_payload: {
+                user_name: userName
+              }
+            });
           }
         });
       } catch (e) {
