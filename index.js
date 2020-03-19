@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 const getAllUsersInGroup = require('./lib/get-all-users-in-group');
 const getTagForUser = require('./lib/get-tag-for-user');
+const rotateKeys = require('./lib/rotate-keys');
 
 const getOctokitClient = require('./lib/get-octokit-client');
 
@@ -22,8 +23,14 @@ exports.handler = async (event, context) => {
         // TODO
         // Make sure we have an installation for this repo
 
-        // TODO
         // Rotate this user's access keys
+        await rotateKeys(userName, {
+          newKeyHandler: async ({ accessKeyId, secretAccessKey }) => {
+            // TODO
+            // Preserve these keys in the repo as secrets
+            console.log(`New key activated for ${userName} in ${repo}: ${accessKeyId}, ${secretAccessKey}.`);
+          }
+        });
       } catch (e) {
         console.error(`Repo not allocated for ${userName}.`);
       }
