@@ -1,22 +1,11 @@
 /* eslint-disable no-console */
-const { Octokit } = require('@octokit/rest');
-const { createAppAuth } = require('@octokit/auth-app');
+const getOctokitClient = require('./lib/get-octokit-client');
 
 exports.handler = async (event, context) => {
   console.log(event, context);
 
-  // Get GitHub App credentials from environment
-  const privateKey = Buffer.from(process.env.GITHUB_APP_PRIVATE_KEY, 'base64').toString();
-  const id = process.env.GITHUB_APP_ID;
-
-  // Create new octokit instance that is authenticated as an installation
-  const octokit = new Octokit({
-    authStrategy: createAppAuth,
-    auth: {
-      id,
-      privateKey
-    }
-  });
+  // Get octokit client
+  const octokit = getOctokitClient();
 
   // Return the authenticated app
   const { data: viewer } = await octokit.apps.getAuthenticated();
