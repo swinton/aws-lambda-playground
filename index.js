@@ -1,26 +1,67 @@
 /* eslint-disable no-console */
-const { Octokit } = require('@octokit/rest');
-const { createAppAuth } = require('@octokit/auth-app');
-const decrypt = require('./lib/decrypt');
+const getAllUsersInGroup = require('./lib/get-all-users-in-group');
+const getTagForUser = require('./lib/get-tag-for-user');
+const rotateKeys = require('./lib/rotate-keys');
+const updateRepoSecret = require('./lib/update-repo-secret');
 
-exports.handler = async (event, context) => {
-  console.log(event, context);
+const { getOctokitAppClient, getOctokitAppInstallationClient } = require('./lib/get-octokit-client');
 
-  // Decode base64-encoded private key
-  const privateKey = Buffer.from(process.env.GITHUB_APP_PRIVATE_KEY, 'base64').toString()
-  const id = process.env.GITHUB_APP_ID
+exports.handler = async () => {
+  // Get octokit client
+  const appOctokit = getOctokitAppClient();
+  const groupName = process.env.GROUP_NAME;
+  const tagName = process.env.TAG_NAME;
 
-  const octokit = new Octokit({
-    authStrategy: createAppAuth,
-    auth: {
-      id,
-      privateKey
-    }
-  });
+  // Iterate over all users in specified group
+  const users = await getAllUsersInGroup(groupName);
+  await Promise.all(
+    users.map(async ({ UserName: userName }) => {
+      try {
+        // repoWithOwner is a string like ":owner/:repo", i.e. "octocat/Spoon-Knife"
+        const repoWithOwner = await getTagForUser(userName, tagName);
+        const [owner, repo] = repoWithOwner.split('/');
 
-  // Return the authenticated app
-  const { data: viewer } = await octokit.apps.getAuthenticated();
-  return viewer;
+        // Make sure we have an installation for this repo
+        // https://developer.github.com/v3/apps/#get-a-repository-installation
+        const { data: installation } = await appOctokit.apps.getRepoInstallation({ owner, repo });
+        const installationOctokit = getOctokitAppInstallationClient(installation.id);
+
+        // Rotate this user's access keys
+        await rotateKeys(userName, {
+          newKeyHandler: async ({ accessKeyId, secretAccessKey }) => {
+            // Preserve these keys in the repo as secrets, via installationOctokit
+            await updateRepoSecret(installationOctokit, {
+              owner,
+              repo,
+              secretName: 'AWS_ACCESS_KEY_ID',
+              secretValue: accessKeyId
+            });
+
+            await updateRepoSecret(installationOctokit, {
+              owner,
+              repo,
+              secretName: 'AWS_SECRET_ACCESS_KEY',
+              secretValue: secretAccessKey
+            });
+            console.log(`New key activated for ${userName} in ${owner}/${repo}.`);
+
+            // Fire off a repository dispatch event
+            // https://github.com/swinton/trigger-repository-dispatch/blob/master/index.js
+            return installationOctokit.repos.createDispatchEvent({
+              owner,
+              repo,
+              event_type: 'aws_access_keys_regenerated',
+              client_payload: {
+                user_name: userName
+              }
+            });
+          }
+        });
+      } catch (e) {
+        console.error(`Repo not allocated for ${userName}.`);
+      }
+    })
+  );
 };
 
 if (require.main === module) {
