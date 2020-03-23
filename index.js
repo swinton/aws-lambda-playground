@@ -59,6 +59,7 @@ exports.handler = async () => {
         });
       } catch (e) {
         console.error(`Repo not allocated for ${userName}.`);
+        throw e;
       }
     })
   );
