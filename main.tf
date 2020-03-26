@@ -6,15 +6,13 @@
 #   -backend-config="region=$AWS_REGION"
 terraform {
   backend "s3" {
-    # Note:
-    # It is recommended to enable versioning on the S3 bucket
-    # (http://docs.aws.amazon.com/AmazonS3/latest/UG/enable-bucket-versioning.html), to allow for state recovery
+    # Note: It is recommended to enable versioning on the S3 bucket (http://docs.aws.amazon.com/AmazonS3/latest/UG/enable-bucket-versioning.html), to allow for state recovery
   }
 }
 
 provider "aws" {
   version = "~> 2.54"
-  region = "${var.aws_region}"
+  region  = "${var.aws_region}"
 }
 
 provider "archive" {
@@ -60,7 +58,7 @@ data "aws_iam_policy_document" "policy_document" {
       "iam:ListAccessKeys",
       "logs:CreateLogGroup",
       "logs:CreateLogStream",
-      "logs:PutLogEvents"
+      "logs:PutLogEvents",
     ]
 
     resources = ["*"]
@@ -68,8 +66,8 @@ data "aws_iam_policy_document" "policy_document" {
 }
 
 resource "aws_iam_role_policy" "role_policy" {
-  name = "${var.iam_role_policy_name}"
-  role = "${aws_iam_role.role.id}"
+  name   = "${var.iam_role_policy_name}"
+  role   = "${aws_iam_role.role.id}"
   policy = "${data.aws_iam_policy_document.policy_document.json}"
 }
 
@@ -79,11 +77,11 @@ resource "aws_lambda_function" "function" {
   filename         = "${data.archive_file.zip.output_path}"
   source_code_hash = "${data.archive_file.zip.output_base64sha256}"
 
-  role    = "${aws_iam_role.role.arn}"
-  handler = "index.handler"
+  role        = "${aws_iam_role.role.arn}"
+  handler     = "index.handler"
   memory_size = "${var.lambda_function_memory}"
-  timeout = "${var.lambda_function_timeout}"
-  runtime = "nodejs12.x"
+  timeout     = "${var.lambda_function_timeout}"
+  runtime     = "nodejs12.x"
 
   environment {
     variables = {
@@ -97,21 +95,23 @@ resource "aws_lambda_function" "function" {
 
 resource "aws_cloudwatch_event_rule" "trigger" {
   name = "${var.cloudwatch_event_name}"
+
   depends_on = [
-    "aws_lambda_function.function"
+    "aws_lambda_function.function",
   ]
+
   schedule_expression = "${var.cloudwatch_schedule_expression}"
 }
 
 resource "aws_cloudwatch_event_target" "target" {
   rule = "${aws_cloudwatch_event_rule.trigger.name}"
-  arn = "${aws_lambda_function.function.arn}"
+  arn  = "${aws_lambda_function.function.arn}"
 }
 
 resource "aws_lambda_permission" "permission_to_fire" {
-  statement_id = "AllowExecutionFromCloudWatch"
-  action = "lambda:InvokeFunction"
+  statement_id  = "AllowExecutionFromCloudWatch"
+  action        = "lambda:InvokeFunction"
   function_name = "${aws_lambda_function.function.function_name}"
-  principal = "events.amazonaws.com"
-  source_arn = "${aws_cloudwatch_event_rule.trigger.arn}"
+  principal     = "events.amazonaws.com"
+  source_arn    = "${aws_cloudwatch_event_rule.trigger.arn}"
 }

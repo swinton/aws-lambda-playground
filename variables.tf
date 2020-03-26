@@ -29,7 +29,6 @@ variable "tag_name" {
 variable "lambda_function_memory" {
   description = "The amount of memory, in MB, the Lambda Function can use at runtime."
   default     = 256
-
 }
 
 variable "lambda_function_timeout" {
@@ -54,5 +53,5 @@ variable "cloudwatch_event_name" {
 
 variable "cloudwatch_schedule_expression" {
   description = "The CloudWatch event schedule, that will dictate how frequently the Lambda function will run."
-  default = "rate(1 hour)"
+  default     = "rate(1 hour)"
 }
